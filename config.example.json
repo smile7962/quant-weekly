@@ -1,0 +1,7 @@
+{
+  "_안내": "이 파일을 config.json으로 복사한 뒤 본인 키를 입력하세요. config.json은 .gitignore에 등록되어 절대 커밋되지 않습니다.",
+  "dart_api_key": "여기에_DART_인증키",
+  "ecos_api_key": "",
+  "base_rate_manual": 2.50,
+  "krx_id_참고": "KRX 로그인은 환경변수 KRX_ID, KRX_PW 사용 (config에 넣지 않음)"
+}

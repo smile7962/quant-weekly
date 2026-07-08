@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>주간 퀀트 리밸런싱 대시보드 v2</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{
+  --bg:#F5F6F8; --panel:#FFFFFF; --ink:#1B2434; --sub:#6B7688; --line:#E3E7EE;
+  --up:#D64545; --dn:#3B6FD4; --gold:#B8860B;
+  --regime:#B8860B; --regime-soft:#FBF4E4;
+  --mono:'JetBrains Mono','Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard',-apple-system,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.55}
+.wrap{max-width:1080px;margin:0 auto;padding:20px 16px 60px}
+header.top{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+header.top h1{font-size:19px;font-weight:800;letter-spacing:-.02em}
+header.top .ver{font-size:12px;color:var(--sub)}
+.proto-note{font-size:12px;color:var(--sub);background:#EEF1F5;border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-bottom:16px}
+
+/* ① 국면 배너 — signature: 국면에 따라 좌측 컬러 바와 배경 틴트가 바뀜 */
+.regime{background:var(--regime-soft);border:1px solid var(--line);border-left:6px solid var(--regime);border-radius:12px;padding:16px 18px;margin-bottom:16px}
+.regime .tag{display:inline-block;font-size:11px;font-weight:700;color:#fff;background:var(--regime);border-radius:4px;padding:2px 8px;letter-spacing:.06em;margin-bottom:6px}
+.regime h2{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:8px}
+.regime .basis{display:flex;gap:24px;flex-wrap:wrap;font-size:12.5px;color:var(--sub)}
+.regime .basis b{color:var(--ink);font-family:var(--mono);font-weight:600}
+.regime .wts{margin-top:10px;font-size:12.5px}
+.regime .wts span{display:inline-block;background:#fff;border:1px solid var(--line);border-radius:6px;padding:3px 9px;margin:2px 4px 0 0;font-family:var(--mono);font-size:12px}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:16px}
+.panel h3{font-size:14px;font-weight:800;margin-bottom:4px;letter-spacing:-.01em}
+.panel .desc{font-size:12px;color:var(--sub);margin-bottom:12px}
+.full{grid-column:1/-1}
+
+/* ② 알파 미니차트 */
+.alphas{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:640px){.alphas{grid-template-columns:1fr}}
+.alpha-card{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.alpha-card .nm{font-size:12.5px;font-weight:700}
+.alpha-card .rt{font-family:var(--mono);font-size:12px;margin:2px 0 6px}
+.alpha-card canvas{width:100%!important;height:56px!important}
+.pos{color:var(--up)} .neg{color:var(--dn)}
+
+/* ③ 포트폴리오 표 */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:11px;color:var(--sub);font-weight:600;text-align:right;padding:6px 8px;border-bottom:2px solid var(--line);letter-spacing:.03em}
+th:first-child,td:first-child{text-align:left}
+td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;font-family:var(--mono);font-size:12.5px}
+td.nm{font-family:'Pretendard';font-weight:600;font-size:13px}
+td .sec{color:var(--sub);font-size:11px;font-family:'Pretendard';font-weight:400;margin-left:6px}
+tr.new td.nm::after{content:"신규";font-size:10px;color:#fff;background:var(--up);border-radius:3px;padding:1px 5px;margin-left:6px;font-weight:700}
+tr.out td{color:var(--sub);text-decoration:line-through}
+.bar{display:inline-block;height:8px;background:var(--up);border-radius:2px;vertical-align:middle;margin-right:6px;opacity:.75}
+
+/* ④ 성과 */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+@media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stat .k{font-size:11px;color:var(--sub);letter-spacing:.03em}
+.stat .v{font-family:var(--mono);font-size:20px;font-weight:700;margin-top:2px}
+#eqChart{width:100%!important;height:260px!important}
+
+/* ⑤ 이력 */
+.hist-item{border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:12.5px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.hist-item .d{font-family:var(--mono);font-weight:600}
+.hist-item .r{color:var(--sub)}
+button.primary{background:var(--ink);color:#fff;border:0;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Pretendard'}
+button.primary:hover{opacity:.88}
+button.ghost{background:#fff;color:var(--sub);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer;font-family:'Pretendard'}
+.btnrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.empty{color:var(--sub);font-size:12.5px;padding:10px 0}
+
+footer{font-size:11.5px;color:var(--sub);margin-top:8px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>주간 퀀트 리밸런싱 대시보드</h1>
+  <span class="ver"><span id="modeLabel">데이터 로딩 중…</span></span>
+</header>
+<div class="proto-note" id="protoNote">데이터 로딩 중…</div>
+
+<!-- ① 국면 배너 -->
+<section class="regime" id="regimeBanner">
+  <span class="tag" id="rgTag">시장 국면</span>
+  <h2 id="rgName">판정 중…</h2>
+  <div class="basis">
+    <span>기준금리 <b id="rgRate">–</b> vs 3년 중앙값 <b id="rgMed">–</b></span>
+    <span>KOSPI200 200일선 기울기 <b id="rgSlope">–</b></span>
+  </div>
+  <div class="wts" id="rgWts"></div>
+</section>
+
+<div class="grid">
+  <!-- ② 알파 패널 -->
+  <section class="panel full">
+    <h3>알파별 최근 12주 성과</h3>
+    <div class="desc">각 알파를 단독 운용했을 때의 주간 누적 수익 (동일 유니버스 · 롱온리 상위 10)</div>
+    <div class="alphas">
+      <div class="alpha-card"><div class="nm">α1 · 단기 평균회귀</div><div class="rt" id="a1r">–</div><canvas id="a1c"></canvas></div>
+      <div class="alpha-card"><div class="nm">α2 · 중기 모멘텀</div><div class="rt" id="a2r">–</div><canvas id="a2c"></canvas></div>
+      <div class="alpha-card"><div class="nm">α3 · 저PBR 밸류</div><div class="rt" id="a3r">–</div><canvas id="a3c"></canvas></div>
+    </div>
+  </section>
+
+  <!-- ③ 이번 주 포트폴리오 -->
+  <section class="panel full">
+    <h3>이번 주 목표 포트폴리오 <span style="font-weight:400;color:var(--sub);font-size:12px" id="pfDate"></span></h3>
+    <div class="desc">종합 알파 점수 상위 10종목 · 롱온리 · 종목당 최대 15% (점수 비례 배분)</div>
+    <table id="pfTable">
+      <thead><tr><th>종목</th><th>α1</th><th>α2</th><th>α3</th><th>종합점수</th><th>목표비중</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <!-- ④ 성과 패널 -->
+  <section class="panel full">
+    <h3>백테스트 성과 · 최근 2년</h3>
+    <div class="desc">주간 리밸런싱 · 거래비용 왕복 0.3% 반영 · 벤치마크 = 모의 KOSPI200</div>
+    <div class="stats">
+      <div class="stat"><div class="k">누적수익률</div><div class="v" id="stRet">–</div></div>
+      <div class="stat"><div class="k">샤프 비율</div><div class="v" id="stShp">–</div></div>
+      <div class="stat"><div class="k">최대 낙폭 MDD</div><div class="v" id="stMdd">–</div></div>
+      <div class="stat"><div class="k">주간 승률</div><div class="v" id="stWin">–</div></div>
+    </div>
+    <canvas id="eqChart"></canvas>
+  </section>
+
+  <!-- ⑤ 리밸런싱 이력 -->
+  <section class="panel full">
+    <h3>리밸런싱 확정 이력</h3>
+    <div class="desc">확정 시점의 국면 판정과 상위 종목이 스냅샷으로 저장됩니다 (이 브라우저의 localStorage)</div>
+    <div id="histList"><div class="empty">아직 확정된 리밸런싱이 없습니다. 아래 버튼으로 이번 주 포트폴리오를 확정해보세요.</div></div>
+    <div class="btnrow">
+      <button class="primary" id="btnConfirm">이번 주 리밸런싱 확정</button>
+      <button class="ghost" id="btnExport">JSON 내보내기</button>
+      <button class="ghost" id="btnClear">이력 초기화</button>
+    </div>
+  </section>
+</div>
+
+<footer>
+  본 도구는 교육·학습용 프로토타입입니다. 표시되는 종목·수치는 알고리즘 검증을 위한 가상 데이터이며 투자 권유가 아닙니다.<br>
+  2단계에서 pykrx(주가·PBR) + 한국은행 ECOS(기준금리) 실데이터로 교체 예정 · 데이터 로더는 <span style="font-family:var(--mono)">loadData()</span> 함수 하나만 바꾸면 되도록 분리되어 있습니다.
+</footer>
+
+</div>
+</body>
+</html>
+<script>
+/* =========================================================
+   0) 데이터 로더 — market_data.json 있으면 실데이터, 없으면 모의 데이터
+   ========================================================= */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+function loadMockData(){
+  const rng=mulberry32(20260708);
+  const N_DAYS=780; // 약 3년
+  const sectors=["전자","화학","금융","바이오","자동차","철강","통신","유통","건설","에너지"];
+  const stocks=[];
+  for(let i=0;i<30;i++){
+    const sec=sectors[i%10];
+    stocks.push({
+      code:"M"+String(i+1).padStart(3,"0"),
+      name:"모의"+sec+String.fromCharCode(65+Math.floor(i/10)), // 모의전자A 등
+      sector:sec,
+      drift:(rng()-0.42)*0.0009,          // 연 -10%~+13% 수준 분산
+      vol:0.012+rng()*0.014,              // 일 변동성 1.2~2.6%
+      pbr:+(0.4+rng()*2.8).toFixed(2),
+      prices:[]
+    });
+  }
+  // 시장 공통 팩터 + 개별 노이즈로 가격 생성 (국면 흉내: 중간에 하락장 구간 삽입)
+  const mkt=[];let m=0;
+  for(let d=0;d<N_DAYS;d++){
+    let mDrift=0.00060;
+    if(d>320&&d<470) mDrift=-0.0009;      // 침체 구간
+    m+= mDrift + (rng()-0.5)*0.016;
+    mkt.push(m);
+  }
+  // 약한 팩터 효과를 내장: 평균회귀(5일), 모멘텀(60일), 밸류(저PBR 프리미엄)
+  // → "패턴이 존재할 때 알고리즘이 포착하는가"를 검증하기 위한 학습용 구조
+  stocks.forEach(s=>{
+    let p=Math.log(10000+rng()*90000);
+    const beta=0.6+rng()*0.8;
+    const logs=[p];
+    const valueDrift=(1.5-s.pbr)*0.00025;      // 저PBR일수록 완만한 추가 상승
+    for(let d=0;d<N_DAYS;d++){
+      const dm=d>0?mkt[d]-mkt[d-1]:0;
+      let step=s.drift + valueDrift + beta*dm + (rng()-0.5)*s.vol*2;
+      const L=logs.length;
+      if(L>65){
+        const r5 =logs[L-1]-logs[L-6]-(mkt[d-1]-mkt[d-6]);   // 시장 제외 초과수익
+        const r60=logs[L-6]-logs[L-66];
+        step += -0.045*r5 + 0.010*r60;         // 평균회귀 + 모멘텀 효과
+      }
+      p+=step;logs.push(p);
+      s.prices.push(Math.exp(p));
+    }
+  });
+  // 지수 = 동일가중 정규화 평균
+  const index=[];
+  for(let d=0;d<N_DAYS;d++){
+    let sum=0;stocks.forEach(s=>sum+=s.prices[d]/s.prices[0]);
+    index.push(sum/stocks.length*100);
+  }
+  // 기준금리 시계열 (월단위 계단형): 저금리→인상→고금리→인하
+  const rateByDay=[];
+  for(let d=0;d<N_DAYS;d++){
+    let r;
+    if(d<180)r=1.75; else if(d<300)r=2.50; else if(d<520)r=3.50; else if(d<650)r=3.00; else r=2.50;
+    rateByDay.push(r);
+  }
+  return {stocks,index,rateByDay,N_DAYS};
+}
+
+/* =========================================================
+   1) 알파 엔진
+   ========================================================= */
+function rank(arr){ // 0~1 정규화 순위 (높을수록 1)
+  const idx=arr.map((v,i)=>[v,i]).sort((a,b)=>a[0]-b[0]);
+  const out=new Array(arr.length);
+  idx.forEach(([_,i],r)=>out[i]=arr.length>1?r/(arr.length-1):0.5);
+  return out;
+}
+function ret(prices,d,look,skip=0){
+  const a=prices[d-skip],b=prices[d-skip-look];
+  return b?a/b-1:0;
+}
+function computeAlphas(stocks,d){
+  const r5 =stocks.map(s=>ret(s.prices,d,5));
+  const r60=stocks.map(s=>ret(s.prices,d,60,5));
+  const pbr=stocks.map(s=>s.pbr);
+  const a1=rank(r5).map(v=>1-v);   // 급락 롱
+  const a2=rank(r60);              // 모멘텀 롱
+  const a3=rank(pbr).map(v=>1-v);  // 저PBR 롱
+  return {a1,a2,a3};
+}
+
+/* =========================================================
+   2) 국면 판정
+   ========================================================= */
+function median(a){const s=[...a].sort((x,y)=>x-y);const m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2}
+function detectRegime(data,d){
+  const rate=data.rateByDay[d];
+  const med=median(data.rateByDay.slice(Math.max(0,d-756),d+1));
+  const hi=rate>med;
+  const ma=(dd,n)=>{let s=0;for(let k=dd-n+1;k<=dd;k++)s+=data.index[k];return s/n};
+  const slope=d>=220?(ma(d,200)-ma(d-20,200))/ma(d-20,200):0;
+  const exp=slope>0;
+  const key=(hi?"HI":"LO")+"_"+(exp?"EXP":"REC");
+  const names={LO_EXP:"저금리 · 확장기",HI_EXP:"고금리 · 확장기",LO_REC:"저금리 · 침체기",HI_REC:"고금리 · 침체기"};
+  const colors={LO_EXP:"#C24141",HI_EXP:"#B8860B",LO_REC:"#3B6FD4",HI_REC:"#5B4FA8"};
+  // 국면별 알파 가중치 (확장기: 모멘텀↑ / 침체기: 평균회귀·밸류↑)
+  const W={LO_EXP:[0.3,0.5,0.2],HI_EXP:[0.3,0.4,0.3],LO_REC:[0.5,0.1,0.4],HI_REC:[0.45,0.1,0.45]};
+  return {key,name:names[key],color:colors[key],rate,med,slope,w:W[key]};
+}
+
+/* =========================================================
+   3) 포트폴리오 구성 (롱온리 상위 N, 종목당 상한)
+   ========================================================= */
+const TOP_N=10, CAP=0.15, COST=0.003; // 왕복 거래비용 0.3%
+function buildPortfolio(stocks,d,regime){
+  const {a1,a2,a3}=computeAlphas(stocks,d);
+  const [w1,w2,w3]=regime.w;
+  const score=stocks.map((s,i)=>w1*a1[i]+w2*a2[i]+w3*a3[i]);
+  const order=score.map((v,i)=>[v,i]).sort((a,b)=>b[0]-a[0]).slice(0,TOP_N);
+  let ws=order.map(([v])=>v);
+  const sum=ws.reduce((a,b)=>a+b,0);
+  ws=ws.map(v=>Math.min(v/sum,CAP));
+  const s2=ws.reduce((a,b)=>a+b,0);
+  ws=ws.map(v=>v/s2);
+  return order.map(([v,i],k)=>({i,score:v,weight:ws[k],a1:a1[i],a2:a2[i],a3:a3[i]}));
+}
+
+/* =========================================================
+   4) 백테스트 (주간 리밸런싱)
+   ========================================================= */
+function backtest(data,startD,endD,alphaOnly=null){
+  const {stocks,index}=data;
+  let eq=1;const eqCurve=[],bmCurve=[],dates=[];
+  let bm0=index[startD];
+  const weekly=[];
+  for(let d=startD;d+5<=endD;d+=5){
+    const regime=detectRegime(data,d);
+    let pf;
+    if(alphaOnly){ // 단일 알파 모드
+      const A=computeAlphas(stocks,d)[alphaOnly];
+      const order=A.map((v,i)=>[v,i]).sort((a,b)=>b[0]-a[0]).slice(0,TOP_N);
+      pf=order.map(([v,i])=>({i,weight:1/TOP_N}));
+    }else{
+      pf=buildPortfolio(stocks,d,regime);
+    }
+    let wret=0;
+    pf.forEach(p=>{wret+=p.weight*(stocks[p.i].prices[d+5]/stocks[p.i].prices[d]-1)});
+    wret-=COST*0.5; // 주당 평균 회전 가정 단순화
+    eq*=(1+wret);
+    weekly.push(wret);
+    eqCurve.push(eq);bmCurve.push(index[d+5]/bm0);dates.push(d+5);
+  }
+  const mean=weekly.reduce((a,b)=>a+b,0)/weekly.length;
+  const sd=Math.sqrt(weekly.reduce((a,b)=>a+(b-mean)**2,0)/weekly.length);
+  const sharpe=sd>0?(mean/sd)*Math.sqrt(52):0;
+  let peak=0,mdd=0;
+  eqCurve.forEach(v=>{peak=Math.max(peak,v);mdd=Math.min(mdd,v/peak-1)});
+  const win=weekly.filter(r=>r>0).length/weekly.length;
+  return {eqCurve,bmCurve,dates,weekly,ret:eq-1,sharpe,mdd,win};
+}
+
+/* =========================================================
+   5) 렌더링
+   ========================================================= */
+async function loadData(){
+  try{
+    const res=await fetch("market_data.json",{cache:"no-store"});
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const j=await res.json();
+    // 실데이터 → 내부 공통 포맷으로 변환
+    const stocks=j.stocks.filter(s=>s.pbr!=null).map(s=>({
+      code:s.code,name:s.name,sector:"",pbr:s.pbr,prices:s.prices}));
+    const N_DAYS=j.index.length;
+    // 기준금리: ECOS 히스토리 있으면 월→일 매핑, 없으면 수동값 상수
+    let rateByDay;
+    if(j.rate_history&&j.rate_history.length){
+      rateByDay=j.dates.map(d=>{
+        const ym=d.slice(0,7).replace("-","");
+        let r=j.rate_history[0].rate;
+        for(const x of j.rate_history){if(x.month<=ym)r=x.rate;}
+        return r;});
+    }else{
+      rateByDay=new Array(N_DAYS).fill(j.base_rate_manual);
+    }
+    return {stocks,index:j.index,rateByDay,N_DAYS,real:true,
+            generated:j.generated,dates:j.dates,manualRate:!(j.rate_history&&j.rate_history.length)};
+  }catch(e){
+    console.warn("실데이터 없음 → 모의 데이터 사용:",e.message);
+    const m=loadMockData();m.real=false;return m;
+  }
+}
+
+(async function main(){
+const data=await loadData();
+
+// 모드 표시
+if(data.real){
+  modeLabel.textContent="실데이터 · "+data.stocks.length+"종목 · 수집 "+data.generated;
+  protoNote.innerHTML="✅ <b>실데이터 모드</b> (pykrx 수집, 참고용 데이터) — 기준금리: "
+    +(data.manualRate?"수동 입력값 사용 중 (ECOS 연동 대기)":"ECOS 자동 연동")
+    +". 본 도구는 학습용이며 투자 권유가 아닙니다.";
+}else{
+  modeLabel.textContent="모의 데이터 30종목 · 3년";
+  protoNote.innerHTML="⚠️ <b>모의 데이터 모드</b> — market_data.json이 없어 내장 가상 데이터로 동작 중입니다. collect_data.py 실행 후 http.server로 접속하면 실데이터로 전환됩니다.";
+}
+
+const TODAY=data.N_DAYS-1;
+const regime=detectRegime(data,TODAY);
+const pf=buildPortfolio(data.stocks,TODAY,regime);
+
+// ① 국면 배너
+document.documentElement.style.setProperty('--regime',regime.color);
+document.documentElement.style.setProperty('--regime-soft',regime.color+'14');
+rgName.textContent=regime.name;
+rgRate.textContent=regime.rate.toFixed(2)+"%";
+rgMed.textContent=regime.med.toFixed(2)+"%";
+rgSlope.textContent=(regime.slope>=0?"+":"")+(regime.slope*100).toFixed(2)+"%"+(regime.slope>0?" (상승)":" (하락)");
+rgWts.innerHTML="이번 주 알파 가중치 → "+["α1 평균회귀","α2 모멘텀","α3 밸류"].map((n,i)=>`<span>${n} ${(regime.w[i]*100).toFixed(0)}%</span>`).join("");
+
+// ② 알파 미니차트 (최근 12주)
+const START=260;
+["a1","a2","a3"].forEach((key,idx)=>{
+  const bt=backtest(data,TODAY-60,TODAY,key);
+  const last12=bt.eqCurve.slice(-12).map(v=>v/bt.eqCurve[Math.max(0,bt.eqCurve.length-13)]);
+  const r=(last12[last12.length-1]-1)*100;
+  const el=document.getElementById(key+"r");
+  el.textContent=(r>=0?"+":"")+r.toFixed(1)+"% / 12주";
+  el.className="rt "+(r>=0?"pos":"neg");
+  new Chart(document.getElementById(key+"c"),{type:"line",
+    data:{labels:last12.map((_,i)=>i),datasets:[{data:last12,borderColor:r>=0?"#D64545":"#3B6FD4",borderWidth:2,pointRadius:0,tension:.3}]},
+    options:{plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{display:false},y:{display:false}},responsive:true,maintainAspectRatio:false}
+  });
+});
+
+// ③ 포트폴리오 표
+pfDate.textContent="· 기준: 모의 데이터 최종 거래일";
+const tb=document.querySelector("#pfTable tbody");
+pf.forEach(p=>{
+  const s=data.stocks[p.i];
+  const tr=document.createElement("tr");
+  tr.innerHTML=`<td class="nm">${s.name}<span class="sec">${s.code} · ${s.sector} · PBR ${s.pbr}</span></td>
+    <td>${p.a1.toFixed(2)}</td><td>${p.a2.toFixed(2)}</td><td>${p.a3.toFixed(2)}</td>
+    <td><b>${p.score.toFixed(3)}</b></td>
+    <td><span class="bar" style="width:${p.weight*300}px"></span>${(p.weight*100).toFixed(1)}%</td>`;
+  tb.appendChild(tr);
+});
+
+// ④ 백테스트 성과 (최근 2년 = 약 500거래일)
+const bt=backtest(data,TODAY-500,TODAY);
+stRet.textContent=(bt.ret>=0?"+":"")+(bt.ret*100).toFixed(1)+"%";
+stRet.className="v "+(bt.ret>=0?"pos":"neg");
+stShp.textContent=bt.sharpe.toFixed(2);
+stMdd.textContent=(bt.mdd*100).toFixed(1)+"%";
+stMdd.className="v neg";
+stWin.textContent=(bt.win*100).toFixed(0)+"%";
+new Chart(document.getElementById("eqChart"),{type:"line",
+  data:{labels:bt.dates.map(d=>"D"+d),datasets:[
+    {label:"전략 (3-알파 · 주간)",data:bt.eqCurve,borderColor:"#D64545",backgroundColor:"#D6454518",borderWidth:2,pointRadius:0,tension:.25,fill:true},
+    {label:"벤치마크 (모의 KOSPI200)",data:bt.bmCurve,borderColor:"#9AA3B2",borderWidth:1.5,pointRadius:0,tension:.25,borderDash:[5,4]}
+  ]},
+  options:{plugins:{legend:{position:"bottom",labels:{boxWidth:14,font:{size:11}}}},
+    scales:{x:{ticks:{maxTicksLimit:8,font:{size:10}},grid:{display:false}},
+            y:{ticks:{font:{size:10},callback:v=>((v-1)*100).toFixed(0)+"%"}}},
+    responsive:true,maintainAspectRatio:false}
+});
+
+// ⑤ 리밸런싱 이력 (localStorage)
+const LS_KEY="quantProto_history_v1";
+function loadHist(){try{return JSON.parse(localStorage.getItem(LS_KEY))||[]}catch(e){return[]}}
+function renderHist(){
+  const h=loadHist();
+  histList.innerHTML=h.length?"":'<div class="empty">아직 확정된 리밸런싱이 없습니다. 아래 버튼으로 이번 주 포트폴리오를 확정해보세요.</div>';
+  h.slice().reverse().forEach(item=>{
+    const div=document.createElement("div");div.className="hist-item";
+    div.innerHTML=`<span class="d">${item.date}</span><span>${item.regime}</span><span class="r">상위: ${item.top.join(", ")}</span>`;
+    histList.appendChild(div);
+  });
+}
+btnConfirm.onclick=()=>{
+  const h=loadHist();
+  h.push({date:new Date().toISOString().slice(0,16).replace("T"," "),regime:regime.name,
+    top:pf.slice(0,5).map(p=>data.stocks[p.i].name),
+    weights:pf.map(p=>({name:data.stocks[p.i].name,w:+(p.weight*100).toFixed(1)}))});
+  try{localStorage.setItem(LS_KEY,JSON.stringify(h))}catch(e){alert("저장 실패: "+e.message)}
+  renderHist();
+};
+btnExport.onclick=()=>{
+  const blob=new Blob([JSON.stringify(loadHist(),null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="rebalancing_history.json";a.click();
+};
+btnClear.onclick=()=>{if(confirm("이력을 모두 삭제할까요?")){localStorage.removeItem(LS_KEY);renderHist()}};
+renderHist();
+})();
+</script>
