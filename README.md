@@ -43,6 +43,11 @@ git push
 
 분기마다 한 번 `python collect_fundamentals.py` 추가 실행 (PBR 보조 데이터).
 
+## 설계 배경·철학
+
+전략의 배경(김민겸 IQC 우승 알고리즘), 수학적 표현, 개발 원칙, 로드맵은
+[`docs/DESIGN.md`](docs/DESIGN.md)에 정리되어 있습니다.
+
 ## 데이터 출처
 
 - 시세·PBR: pykrx (KRX/네이버, 참고용)
