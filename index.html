@@ -38,7 +38,8 @@ header.top .ver{font-size:12px;color:var(--sub)}
 .full{grid-column:1/-1}
 
 /* ② 알파 미니차트 */
-.alphas{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.alphas{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:900px){.alphas{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:640px){.alphas{grid-template-columns:1fr}}
 .alpha-card{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .alpha-card .nm{font-size:12.5px;font-weight:700}
@@ -111,7 +112,7 @@ details.help>summary:hover{background:#F7F9FC}
     <ul>
       <li><b>기준금리 vs 3년 중앙값</b>: 최근 3년 평균보다 높으면 고금리, 낮으면 저금리</li>
       <li><b>200일선 기울기</b>: 코스피200 장기추세선이 우상향이면 확장기, 우하향이면 침체기</li>
-      <li><b>알파 가중치</b>: 이 국면에서 아래 3가지 전략을 각각 얼마나 비중 있게 쓸지</li>
+      <li><b>알파 가중치</b>: 이 국면에서 아래 4가지 전략을 각각 얼마나 비중 있게 쓸지</li>
     </ul>
     <p>→ “지금 시장이 어떤 상태라, 어떤 전략에 무게를 두는지”를 보는 칸.</p>
 
@@ -120,13 +121,14 @@ details.help>summary:hover{background:#F7F9FC}
       <li><b>α1 단기 평균회귀</b>: 최근 급락한 종목을 삼 (“떨어졌으니 반등하겠지”)</li>
       <li><b>α2 중기 모멘텀</b>: 최근 2~3달 꾸준히 오른 종목을 삼 (“추세는 이어진다”)</li>
       <li><b>α3 저PBR 밸류</b>: 저평가(PBR 낮은) 종목을 삼 (“싼 게 유리”)</li>
+      <li><b>α4 추세 전환</b>: 하락세가 꺾이고 위로 방향을 트는(가속) 종목을 삼 (“돌아서는 배에 탄다”). 침체기에 특히 가중</li>
     </ul>
     <p>숫자 <b>+3.2% / 12주</b> = 그 전략만 단독으로 썼을 때의 최근 수익률(빨강=플러스, 파랑=마이너스). 요즘 어떤 스타일이 잘 먹히는지 감 잡는 참고용.</p>
 
     <h4>③ 이번 주 목표 포트폴리오 — 가장 중요한 표 ⭐</h4>
     <ul>
-      <li><b>α1 / α2 / α3</b>: 각 전략에서 이 종목의 순위 점수(0~1). 1에 가까울수록 그 전략상 매력적</li>
-      <li><b>종합점수</b>: 3개를 국면 가중치로 합친 최종 점수. 높을수록 상위</li>
+      <li><b>α1 / α2 / α3 / α4</b>: 각 전략에서 이 종목의 순위 점수(0~1). 1에 가까울수록 그 전략상 매력적</li>
+      <li><b>종합점수</b>: 4개를 국면 가중치로 합친 최종 점수. 높을수록 상위</li>
       <li><b>목표비중</b>: 이 종목에 자금의 몇 %를 넣을지 (한 종목 최대 15%)</li>
     </ul>
     <p>→ 위에서부터가 이번 주 매수 우선순위. 예: “삼성전자 12%”면 투자금 100만원 중 약 12만원어치 매수 고려. 실제 매수는 본인 판단.</p>
@@ -177,6 +179,7 @@ details.help>summary:hover{background:#F7F9FC}
       <div class="alpha-card"><div class="nm">α1 · 단기 평균회귀</div><div class="rt" id="a1r">–</div><canvas id="a1c"></canvas></div>
       <div class="alpha-card"><div class="nm">α2 · 중기 모멘텀</div><div class="rt" id="a2r">–</div><canvas id="a2c"></canvas></div>
       <div class="alpha-card"><div class="nm">α3 · 저PBR 밸류</div><div class="rt" id="a3r">–</div><canvas id="a3c"></canvas></div>
+      <div class="alpha-card"><div class="nm">α4 · 추세 전환</div><div class="rt" id="a4r">–</div><canvas id="a4c"></canvas></div>
     </div>
   </section>
 
@@ -185,7 +188,7 @@ details.help>summary:hover{background:#F7F9FC}
     <h3>이번 주 목표 포트폴리오 <span style="font-weight:400;color:var(--sub);font-size:12px" id="pfDate"></span></h3>
     <div class="desc">종합 알파 점수 상위 10종목 · 롱온리 · 종목당 최대 15% (점수 비례 배분)</div>
     <table id="pfTable">
-      <thead><tr><th>종목</th><th>α1</th><th>α2</th><th>α3</th><th>종합점수</th><th>목표비중</th></tr></thead>
+      <thead><tr><th>종목</th><th>α1</th><th>α2</th><th>α3</th><th>α4</th><th>종합점수</th><th>목표비중</th></tr></thead>
       <tbody></tbody>
     </table>
   </section>
@@ -308,10 +311,12 @@ function computeAlphas(stocks,d){
   const r5 =stocks.map(s=>ret(s.prices,d,5));
   const r60=stocks.map(s=>ret(s.prices,d,60,5));
   const pbr=stocks.map(s=>s.pbr);
+  const acc=stocks.map(s=>ret(s.prices,d,20)-ret(s.prices,d,20,20)); // 모멘텀 가속(2차 미분)
   const a1=rank(r5).map(v=>1-v);   // 급락 롱
   const a2=rank(r60);              // 모멘텀 롱
   const a3=rank(pbr).map(v=>1-v);  // 저PBR 롱
-  return {a1,a2,a3};
+  const a4=rank(acc);              // 추세 전환(가속) 롱
+  return {a1,a2,a3,a4};
 }
 
 /* =========================================================
@@ -329,7 +334,8 @@ function detectRegime(data,d){
   const names={LO_EXP:"저금리 · 확장기",HI_EXP:"고금리 · 확장기",LO_REC:"저금리 · 침체기",HI_REC:"고금리 · 침체기"};
   const colors={LO_EXP:"#C24141",HI_EXP:"#B8860B",LO_REC:"#3B6FD4",HI_REC:"#5B4FA8"};
   // 국면별 알파 가중치 (확장기: 모멘텀↑ / 침체기: 평균회귀·밸류↑)
-  const W={LO_EXP:[0.3,0.5,0.2],HI_EXP:[0.3,0.4,0.3],LO_REC:[0.5,0.1,0.4],HI_REC:[0.45,0.1,0.45]};
+  // 침체기에 α4(추세 전환) 가중을 높임 — 검증(research/validate_alpha4.py): REC 주간수익 +43→+86bp
+  const W={LO_EXP:[0.25,0.45,0.15,0.15],HI_EXP:[0.25,0.35,0.25,0.15],LO_REC:[0.35,0.10,0.30,0.25],HI_REC:[0.30,0.10,0.35,0.25]};
   return {key,name:names[key],color:colors[key],rate,med,slope,w:W[key]};
 }
 
@@ -338,16 +344,16 @@ function detectRegime(data,d){
    ========================================================= */
 const TOP_N=10, CAP=0.15, COST=0.003; // 왕복 거래비용 0.3%
 function buildPortfolio(stocks,d,regime){
-  const {a1,a2,a3}=computeAlphas(stocks,d);
-  const [w1,w2,w3]=regime.w;
-  const score=stocks.map((s,i)=>w1*a1[i]+w2*a2[i]+w3*a3[i]);
+  const {a1,a2,a3,a4}=computeAlphas(stocks,d);
+  const [w1,w2,w3,w4]=regime.w;
+  const score=stocks.map((s,i)=>w1*a1[i]+w2*a2[i]+w3*a3[i]+w4*a4[i]);
   const order=score.map((v,i)=>[v,i]).sort((a,b)=>b[0]-a[0]).slice(0,TOP_N);
   let ws=order.map(([v])=>v);
   const sum=ws.reduce((a,b)=>a+b,0);
   ws=ws.map(v=>Math.min(v/sum,CAP));
   const s2=ws.reduce((a,b)=>a+b,0);
   ws=ws.map(v=>v/s2);
-  return order.map(([v,i],k)=>({i,score:v,weight:ws[k],a1:a1[i],a2:a2[i],a3:a3[i]}));
+  return order.map(([v,i],k)=>({i,score:v,weight:ws[k],a1:a1[i],a2:a2[i],a3:a3[i],a4:a4[i]}));
 }
 
 /* =========================================================
@@ -440,11 +446,11 @@ rgName.textContent=regime.name;
 rgRate.textContent=regime.rate.toFixed(2)+"%";
 rgMed.textContent=regime.med.toFixed(2)+"%";
 rgSlope.textContent=(regime.slope>=0?"+":"")+(regime.slope*100).toFixed(2)+"%"+(regime.slope>0?" (상승)":" (하락)");
-rgWts.innerHTML="이번 주 알파 가중치 → "+["α1 평균회귀","α2 모멘텀","α3 밸류"].map((n,i)=>`<span>${n} ${(regime.w[i]*100).toFixed(0)}%</span>`).join("");
+rgWts.innerHTML="이번 주 알파 가중치 → "+["α1 평균회귀","α2 모멘텀","α3 밸류","α4 추세전환"].map((n,i)=>`<span>${n} ${(regime.w[i]*100).toFixed(0)}%</span>`).join("");
 
 // ② 알파 미니차트 (최근 12주)
 const START=260;
-["a1","a2","a3"].forEach((key,idx)=>{
+["a1","a2","a3","a4"].forEach((key,idx)=>{
   const bt=backtest(data,TODAY-60,TODAY,key);
   const last12=bt.eqCurve.slice(-12).map(v=>v/bt.eqCurve[Math.max(0,bt.eqCurve.length-13)]);
   const r=(last12[last12.length-1]-1)*100;
@@ -464,7 +470,7 @@ pf.forEach(p=>{
   const s=data.stocks[p.i];
   const tr=document.createElement("tr");
   tr.innerHTML=`<td class="nm">${s.name}<span class="sec">${s.code} · ${s.sector} · PBR ${s.pbr}</span></td>
-    <td>${p.a1.toFixed(2)}</td><td>${p.a2.toFixed(2)}</td><td>${p.a3.toFixed(2)}</td>
+    <td>${p.a1.toFixed(2)}</td><td>${p.a2.toFixed(2)}</td><td>${p.a3.toFixed(2)}</td><td>${p.a4.toFixed(2)}</td>
     <td><b>${p.score.toFixed(3)}</b></td>
     <td><span class="bar" style="width:${p.weight*300}px"></span>${(p.weight*100).toFixed(1)}%</td>`;
   tb.appendChild(tr);
