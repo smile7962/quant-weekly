@@ -76,6 +76,21 @@ button.ghost{background:#fff;color:var(--sub);border:1px solid var(--line);borde
 .empty{color:var(--sub);font-size:12.5px;padding:10px 0}
 
 footer{font-size:11.5px;color:var(--sub);margin-top:8px;line-height:1.7}
+
+/* 도움말 패널 */
+details.help{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:16px;overflow:hidden}
+details.help>summary{cursor:pointer;list-style:none;padding:14px 18px;font-size:14px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:8px}
+details.help>summary::-webkit-details-marker{display:none}
+details.help>summary::after{content:"▾";margin-left:auto;color:var(--sub);transition:transform .2s}
+details.help[open]>summary::after{transform:rotate(180deg)}
+details.help>summary:hover{background:#F7F9FC}
+.help-body{padding:2px 18px 18px;font-size:13px;line-height:1.65;color:var(--ink)}
+.help-body h4{font-size:13.5px;font-weight:800;margin:14px 0 4px;letter-spacing:-.01em}
+.help-body p{color:var(--sub);margin:2px 0 6px}
+.help-body ul{margin:2px 0 6px 18px}
+.help-body li{margin:3px 0}
+.help-body .tip{background:var(--regime-soft,#FBF4E4);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:10px;color:var(--ink)}
+.help-body b.k{font-family:var(--mono);font-weight:700}
 </style>
 </head>
 <body>
@@ -86,6 +101,61 @@ footer{font-size:11.5px;color:var(--sub);margin-top:8px;line-height:1.7}
   <span class="ver"><span id="modeLabel">데이터 로딩 중…</span></span>
 </header>
 <div class="proto-note" id="protoNote">데이터 로딩 중…</div>
+
+<details class="help">
+  <summary>❓ 이 대시보드 숫자 읽는 법 · 초보자 도움말</summary>
+  <div class="help-body">
+    <p>이 도구는 <b>“이번 주에 어떤 종목을 살지”를 규칙에 따라 골라주는</b> 대시보드입니다. 미래를 맞히는 게 아니라, 과거에 통했던 규칙으로 상대적으로 유리한 종목을 추려줍니다. 화면 위에서 아래 순서로 봅니다.</p>
+
+    <h4>① 맨 위 색깔 배너 — 지금 시장 “국면”</h4>
+    <ul>
+      <li><b>기준금리 vs 3년 중앙값</b>: 최근 3년 평균보다 높으면 고금리, 낮으면 저금리</li>
+      <li><b>200일선 기울기</b>: 코스피200 장기추세선이 우상향이면 확장기, 우하향이면 침체기</li>
+      <li><b>알파 가중치</b>: 이 국면에서 아래 3가지 전략을 각각 얼마나 비중 있게 쓸지</li>
+    </ul>
+    <p>→ “지금 시장이 어떤 상태라, 어떤 전략에 무게를 두는지”를 보는 칸.</p>
+
+    <h4>② 알파별 최근 12주 성과 — 3개 카드</h4>
+    <ul>
+      <li><b>α1 단기 평균회귀</b>: 최근 급락한 종목을 삼 (“떨어졌으니 반등하겠지”)</li>
+      <li><b>α2 중기 모멘텀</b>: 최근 2~3달 꾸준히 오른 종목을 삼 (“추세는 이어진다”)</li>
+      <li><b>α3 저PBR 밸류</b>: 저평가(PBR 낮은) 종목을 삼 (“싼 게 유리”)</li>
+    </ul>
+    <p>숫자 <b>+3.2% / 12주</b> = 그 전략만 단독으로 썼을 때의 최근 수익률(빨강=플러스, 파랑=마이너스). 요즘 어떤 스타일이 잘 먹히는지 감 잡는 참고용.</p>
+
+    <h4>③ 이번 주 목표 포트폴리오 — 가장 중요한 표 ⭐</h4>
+    <ul>
+      <li><b>α1 / α2 / α3</b>: 각 전략에서 이 종목의 순위 점수(0~1). 1에 가까울수록 그 전략상 매력적</li>
+      <li><b>종합점수</b>: 3개를 국면 가중치로 합친 최종 점수. 높을수록 상위</li>
+      <li><b>목표비중</b>: 이 종목에 자금의 몇 %를 넣을지 (한 종목 최대 15%)</li>
+    </ul>
+    <p>→ 위에서부터가 이번 주 매수 우선순위. 예: “삼성전자 12%”면 투자금 100만원 중 약 12만원어치 매수 고려. 실제 매수는 본인 판단.</p>
+
+    <h4>④ 백테스트 성과 · 최근 2년 — 과거에 이 규칙이 어땠나</h4>
+    <ul>
+      <li><b>누적수익률</b>: 2년간 총 몇 %. 벤치마크(코스피)보다 높으면 선방</li>
+      <li><b>샤프 비율</b>: 위험 대비 수익 효율. 1.0↑ 준수, 2.0↑ 매우 우수</li>
+      <li><b>최대 낙폭(MDD)</b>: 고점 대비 최대 하락폭. -30%면 “한때 30% 손실” — 견딜 수 있는지가 중요</li>
+      <li><b>주간 승률</b>: 이긴 주 비율. 50% 안팎이 보통(승률보다 누적수익이 중요)</li>
+    </ul>
+    <p>그래프의 <b>빨간선=전략</b>, <b>회색 점선=코스피 벤치마크</b>. 빨간선이 위에 있으면 시장을 이긴 것.</p>
+
+    <h4>⑤ 리밸런싱 확정 이력</h4>
+    <p>‘이번 주 리밸런싱 확정’ 버튼 → 지금의 국면·상위 종목이 이 기기에 기록됨. 나중에 “그때 왜 그렇게 판단했는지” 복기용.</p>
+
+    <h4>🧭 매주 사용 루틴</h4>
+    <p>① 배너로 국면 확인 → ③ 표에서 상위 종목·비중 확인(매수 후보) → ④ 성과로 전략이 요즘도 통하나 점검 → ⑤ 확정 버튼으로 기록.</p>
+
+    <div class="tip">
+      <b>⚠️ 초보자 필수 3가지</b>
+      <ul>
+        <li><b>예측이 아니라 확률적 우위</b> — 개별 종목은 자주 틀립니다. 여러 종목·여러 주 평균으로 이기는 구조</li>
+        <li><b>롱온리(매수만)</b> — 시장 전체가 빠지면 같이 빠집니다. 분산·여유자금으로</li>
+        <li><b>먼저 모의로</b> — 실제 돈 넣기 전 몇 달 종이거래로 검증. 투자 권유 아님, 판단·책임은 본인</li>
+      </ul>
+    </div>
+  </div>
+</details>
 
 <!-- ① 국면 배너 -->
 <section class="regime" id="regimeBanner">
@@ -123,7 +193,7 @@ footer{font-size:11.5px;color:var(--sub);margin-top:8px;line-height:1.7}
   <!-- ④ 성과 패널 -->
   <section class="panel full">
     <h3>백테스트 성과 · 최근 2년</h3>
-    <div class="desc">주간 리밸런싱 · 거래비용 왕복 0.3% 반영 · 벤치마크 = 모의 KOSPI200</div>
+    <div class="desc">주간 리밸런싱 · 거래비용 왕복 0.3% 반영 · 벤치마크 = KOSPI200 지수</div>
     <div class="stats">
       <div class="stat"><div class="k">누적수익률</div><div class="v" id="stRet">–</div></div>
       <div class="stat"><div class="k">샤프 비율</div><div class="v" id="stShp">–</div></div>
@@ -147,8 +217,8 @@ footer{font-size:11.5px;color:var(--sub);margin-top:8px;line-height:1.7}
 </div>
 
 <footer>
-  본 도구는 교육·학습용 프로토타입입니다. 표시되는 종목·수치는 알고리즘 검증을 위한 가상 데이터이며 투자 권유가 아닙니다.<br>
-  2단계에서 pykrx(주가·PBR) + 한국은행 ECOS(기준금리) 실데이터로 교체 예정 · 데이터 로더는 <span style="font-family:var(--mono)">loadData()</span> 함수 하나만 바꾸면 되도록 분리되어 있습니다.
+  본 도구는 교육·학습용입니다. 투자 권유가 아니며, 모든 투자 판단과 책임은 본인에게 있습니다.<br>
+  표시되는 종목·수치는 알고리즘 학습을 위한 참고용 데이터입니다. 데이터 출처와 수집 시각은 상단 배너에 표시됩니다.
 </footer>
 
 </div>
@@ -388,7 +458,7 @@ const START=260;
 });
 
 // ③ 포트폴리오 표
-pfDate.textContent="· 기준: 모의 데이터 최종 거래일";
+pfDate.textContent=(data.real&&data.dates&&data.dates.length)?("· 기준일 "+data.dates[data.dates.length-1]):"· 기준: 모의 데이터 최종 거래일";
 const tb=document.querySelector("#pfTable tbody");
 pf.forEach(p=>{
   const s=data.stocks[p.i];
@@ -411,7 +481,7 @@ stWin.textContent=(bt.win*100).toFixed(0)+"%";
 new Chart(document.getElementById("eqChart"),{type:"line",
   data:{labels:bt.dates.map(d=>"D"+d),datasets:[
     {label:"전략 (3-알파 · 주간)",data:bt.eqCurve,borderColor:"#D64545",backgroundColor:"#D6454518",borderWidth:2,pointRadius:0,tension:.25,fill:true},
-    {label:"벤치마크 (모의 KOSPI200)",data:bt.bmCurve,borderColor:"#9AA3B2",borderWidth:1.5,pointRadius:0,tension:.25,borderDash:[5,4]}
+    {label:(data.real?"벤치마크 (KOSPI200)":"벤치마크 (모의 KOSPI200)"),data:bt.bmCurve,borderColor:"#9AA3B2",borderWidth:1.5,pointRadius:0,tension:.25,borderDash:[5,4]}
   ]},
   options:{plugins:{legend:{position:"bottom",labels:{boxWidth:14,font:{size:11}}}},
     scales:{x:{ticks:{maxTicksLimit:8,font:{size:10}},grid:{display:false}},
