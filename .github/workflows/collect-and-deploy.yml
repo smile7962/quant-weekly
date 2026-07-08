@@ -1,0 +1,80 @@
+name: Weekly data collection & deploy
+
+# 매주 GitHub 클라우드 러너에서 pykrx로 시세를 수집해 market_data.json을
+# 갱신·커밋하고, 곧바로 GitHub Pages로 배포한다. 어떤 기기(PC/갤탭)도
+# 파이썬을 돌릴 필요가 없다.
+#
+# ⚠️ 주의: GitHub 러너는 해외(미국) IP라 KRX/네이버 스크래핑이 차단·불안정할
+#    수 있다. 우선 workflow_dispatch(수동 실행)로 실제 수집 가능 여부를 검증한다.
+#
+# ⚠️ GITHUB_TOKEN으로 push한 커밋은 다른 워크플로우를 트리거하지 않으므로,
+#    수집→커밋→배포를 이 한 잡에서 모두 처리한다.
+#
+# 필요한 Secrets (저장소 Settings → Secrets and variables → Actions):
+#    KRX_ID, KRX_PW        : data.krx.co.kr 로그인 (pykrx 최신 버전이 요구)
+#    ECOS_API_KEY (선택)   : 한국은행 기준금리 히스토리. 없으면 수동값 사용
+
+on:
+  schedule:
+    - cron: '0 0 * * 6'   # 매주 토요일 00:00 UTC = 토요일 09:00 KST
+  workflow_dispatch:        # Actions 탭에서 수동 실행(테스트)
+
+# 배포에 필요한 권한 + 데이터 커밋(push)을 위한 contents:write
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+# Pages 배포는 한 번에 하나만 (deploy-pages.yml과 그룹 공유)
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  collect-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pykrx requests
+
+      - name: Collect market data (pykrx)
+        env:
+          KRX_ID: ${{ secrets.KRX_ID }}
+          KRX_PW: ${{ secrets.KRX_PW }}
+          ECOS_API_KEY: ${{ secrets.ECOS_API_KEY }}
+        run: python collect_data.py
+
+      - name: Commit updated data
+        run: |
+          if [ -n "$(git status --porcelain market_data.json)" ]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add market_data.json
+            git commit -m "data: 주간 자동 갱신 $(date +%Y-%m-%d)"
+            git push
+          else
+            echo "market_data.json 변경 없음 — 커밋 생략"
+          fi
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
