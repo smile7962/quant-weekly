@@ -1,0 +1,50 @@
+name: Deploy dashboard to GitHub Pages
+
+# index.html(대시보드)과 market_data.json을 GitHub Pages로 배포한다.
+# 빌드 단계 없이 정적 파일을 그대로 서빙한다.
+# 주간 워크플로우: 로컬에서 collect_data.py 실행 → market_data.json 커밋/푸시
+#   → 이 워크플로우가 자동 실행되어 폰에서 볼 수 있는 사이트를 갱신한다.
+
+on:
+  push:
+    branches:
+      - claude/file-analysis-upload-1fvmzs
+      - main
+    paths:
+      - 'index.html'
+      - 'market_data.json'
+      - 'fundamentals.json'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:   # Actions 탭에서 수동 실행 가능
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 동시에 하나의 배포만 진행 (진행 중이면 최신 것으로 대체)
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'   # 저장소 루트를 그대로 업로드 (index.html이 진입점)
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
