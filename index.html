@@ -486,7 +486,7 @@ stMdd.className="v neg";
 stWin.textContent=(bt.win*100).toFixed(0)+"%";
 new Chart(document.getElementById("eqChart"),{type:"line",
   data:{labels:bt.dates.map(d=>"D"+d),datasets:[
-    {label:"전략 (3-알파 · 주간)",data:bt.eqCurve,borderColor:"#D64545",backgroundColor:"#D6454518",borderWidth:2,pointRadius:0,tension:.25,fill:true},
+    {label:"전략 (4-알파 · 주간)",data:bt.eqCurve,borderColor:"#D64545",backgroundColor:"#D6454518",borderWidth:2,pointRadius:0,tension:.25,fill:true},
     {label:(data.real?"벤치마크 (KOSPI200)":"벤치마크 (모의 KOSPI200)"),data:bt.bmCurve,borderColor:"#9AA3B2",borderWidth:1.5,pointRadius:0,tension:.25,borderDash:[5,4]}
   ]},
   options:{plugins:{legend:{position:"bottom",labels:{boxWidth:14,font:{size:11}}}},
