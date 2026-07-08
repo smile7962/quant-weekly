@@ -39,6 +39,8 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true   # Pages가 꺼져 있으면 워크플로우가 자동 활성화
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
